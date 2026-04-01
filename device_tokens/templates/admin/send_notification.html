@@ -1,0 +1,233 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .notification-form {
+        max-width: 800px;
+        margin: 20px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-row {
+        margin-bottom: 20px;
+    }
+
+    .form-row label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="url"],
+    .form-row textarea,
+    .form-row select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+
+    .form-row input[type="text"]:focus,
+    .form-row input[type="url"]:focus,
+    .form-row textarea:focus,
+    .form-row select:focus {
+        outline: none;
+        border-color: #417690;
+        box-shadow: 0 0 0 3px rgba(65, 118, 144, 0.1);
+    }
+
+    .helptext {
+        display: block;
+        margin-top: 5px;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .submit-row {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+        text-align: right;
+    }
+
+    .submit-row input[type="submit"] {
+        background-color: #417690;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .submit-row input[type="submit"]:hover {
+        background-color: #2e5a6f;
+    }
+
+    .submit-row .cancel-link {
+        margin-right: 15px;
+        color: #666;
+        text-decoration: none;
+    }
+
+    .submit-row .cancel-link:hover {
+        color: #417690;
+    }
+
+    .device-stats {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 25px;
+    }
+
+    .device-stats h3 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        color: #333;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 10px;
+        background: white;
+        border-radius: 4px;
+    }
+
+    .stat-item .number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #417690;
+    }
+
+    .stat-item .label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .page-header {
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        font-size: 24px;
+        color: #333;
+    }
+
+    .conditional-field {
+        transition: opacity 0.3s;
+    }
+
+    .conditional-field.hidden {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    .errors {
+        color: #c00;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const navigationTypeField = document.querySelector('select[name="navigation_type"]');
+        const announcementIdRow = document.querySelector('input[name="announcement_id"]').closest('.form-row');
+
+        function toggleAnnouncementId() {
+            if (navigationTypeField.value === 'announcement_detail') {
+                announcementIdRow.classList.remove('hidden');
+                announcementIdRow.querySelector('input').required = true;
+            } else {
+                announcementIdRow.classList.add('hidden');
+                announcementIdRow.querySelector('input').required = false;
+                announcementIdRow.querySelector('input').value = '';
+            }
+        }
+
+        // Initial state
+        toggleAnnouncementId();
+
+        // Listen for changes
+        navigationTypeField.addEventListener('change', toggleAnnouncementId);
+    });
+</script>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:device_tokens_devicetoken_changelist' %}">Device Tokens</a>
+    &rsaquo; Send Notification
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="notification-form">
+    <div class="page-header">
+        <h1>📱 Send Push Notification</h1>
+    </div>
+
+    <div class="device-stats">
+        <h3>📊 Active Devices</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="number">{{ total_devices }}</div>
+                <div class="label">Total</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">{{ android_count }}</div>
+                <div class="label">Android</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">{{ ios_count }}</div>
+                <div class="label">iOS</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">{{ web_count }}</div>
+                <div class="label">Web</div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="form-row">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}
+            <span class="helptext">{{ field.help_text }}</span>
+            {% endif %}
+            {% if field.errors %}
+            <div class="errors">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="submit-row">
+            <a href="{% url 'admin:device_tokens_devicetoken_changelist' %}" class="cancel-link">Cancel</a>
+            <input type="submit" value="🚀 Send Notification">
+        </div>
+    </form>
+</div>
+{% endblock %}
